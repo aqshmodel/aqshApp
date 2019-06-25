@@ -12,7 +12,7 @@ import FBSDKCoreKit
 import FBSDKLoginKit
 
 
-class basicRegistrationViewController: UIViewController,UIPickerViewDelegate, UIPickerViewDataSource, LoginButtonDelegate {
+class basicRegistrationViewController: UIViewController,UIPickerViewDelegate, UIPickerViewDataSource, LoginButtonDelegate, UITextFieldDelegate {
 
     @IBOutlet weak var genderText: UITextField!
     @IBOutlet weak var managerPhoneNumber: UITextField!
@@ -37,6 +37,8 @@ class basicRegistrationViewController: UIViewController,UIPickerViewDelegate, UI
         super.viewDidLoad()
         ref = Database.database().reference() //リファレンスの初期化
         user = Auth.auth().currentUser         //認証した現在のユーザーを格納
+        managerPhoneNumber.delegate = self
+        managerArea.delegate = self
         // ピッカー設定
         pickerView.delegate = self
         pickerView.dataSource = self
@@ -65,8 +67,15 @@ class basicRegistrationViewController: UIViewController,UIPickerViewDelegate, UI
         
     }
     
-    override func viewDidAppear(_ animated: Bool) {
+    // エンターキーでテキストフィールドを隠すメソッド
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
         
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        user = Auth.auth().currentUser
         // facebookにログイン済みかチェック
         if let token = AccessToken.current {
             let credential = FacebookAuthProvider.credential(withAccessToken: token.tokenString)
@@ -83,24 +92,29 @@ class basicRegistrationViewController: UIViewController,UIPickerViewDelegate, UI
                             for i in 0 ... num-1 {
                                 
                                 if self.readData[i]["registerId"]! as! String == self.user!.uid {
-                                    // データベースの値をreadDataに読み込み、過去のIDがあったら基本登録情報がないかチェック
+                                    // データベースの値をreadDataに読み込み、過去のIDがあったら基本登録情報がないかチェックして登録があればスキップ
                                     guard self.readData[i]["managerGender"] == nil else {
                                         self.performSegue(withIdentifier: "toTalentRegistration", sender: self)//IDで識別
-                                        return
+                                        return;
                                     }
-                                    
+                                    return;
                                 } else {
                                     //過去にIDが無かったら自動生成の文字列の階層までのDatabaseReferenceを格納
                                     let sendRef = self.ref.child("AQSH").child("manager").childByAutoId()
                                     let managerId = sendRef.key! //自動生成された文字列(AutoId)を格納
-                                    sendRef.setValue(["managerId": managerId,"registerId": self.user.uid]) //データベースにそれぞれ書き込み
+                                    sendRef.setValue(["managerId": managerId, "registerId": self.user.uid]) //データベースにそれぞれ書き込み
+                                    return;
                                 }
                             }
+                        } else {
+                            
+                            let sendRef = self.ref.child("AQSH").child("manager").childByAutoId()
+                            let managerId = sendRef.key! //自動生成された文字列(AutoId)を格納
+                            sendRef.setValue(["managerId": managerId, "registerId": self.user.uid]) //データベースにそれぞれ書き込み
                         }
                     }
                 }
             }
-            return
         }
     }
     
@@ -115,6 +129,22 @@ class basicRegistrationViewController: UIViewController,UIPickerViewDelegate, UI
     }
     // Logout callback
     func loginButtonDidLogOut(_ loginButton: FBLoginButton!) {
+    }
+    
+    // databaseからのログアウトボタン,処理が完了したらトップ画面に戻る
+    @IBAction func logoutButton(_ sender: UIButton) {
+        let firebaseAuth = Auth.auth()
+        do {
+            try firebaseAuth.signOut()
+            //同じstororyboard内であることをここで定義
+            let storyboard: UIStoryboard = self.storyboard!
+            //storyboard上の移動先、loginViewへ
+            let loginView = storyboard.instantiateViewController(withIdentifier: "loginView")
+            //ここが実際に移動するコードとなります
+            self.present(loginView, animated: true, completion: nil)
+        } catch let signOutError as NSError {
+            print ("Error signing out: %@", signOutError)
+        }
     }
     
     

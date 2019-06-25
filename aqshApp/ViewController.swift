@@ -22,8 +22,8 @@ class ViewController: UIViewController, LoginButtonDelegate {
     
         // Do any additional setup after loading the view.
     }
+    
     override func viewDidAppear(_ animated: Bool) {
-        
         // ログイン済みかチェック
         if let token = AccessToken.current {
             let credential = FacebookAuthProvider.credential(withAccessToken: token.tokenString)
@@ -32,18 +32,11 @@ class ViewController: UIViewController, LoginButtonDelegate {
                     // ...
                     return
                 }
-                // ログイン時の処理
-                 self.performSegue(withIdentifier: "toBasicRegistration", sender: self)//IDで識別
+//                // ログイン時の処理
+//                 self.performSegue(withIdentifier: "toBasicRegistration", sender: self)//IDで識別
             }
             return
         }
-        // ログインボタン設置
-        let fbLoginBtn = FBLoginButton(type: .custom)
-        fbLoginBtn.setTitle("Facebookでログイン", for: .normal)
-        fbLoginBtn.permissions = ["public_profile", "email"]
-//        fbLoginBtn.center = self.view.center
-        fbLoginBtn.delegate = self
-//        self.view.addSubview(fbLoginBtn)
     }
     
    
@@ -56,9 +49,16 @@ class ViewController: UIViewController, LoginButtonDelegate {
             return
         }
         // ログイン時の処理
+        self.performSegue(withIdentifier: "toBasicRegistration", sender: self)//IDで識別
     }
     
     @IBOutlet weak var logoImage: UIImageView!
+    @IBAction func fbLoginButton(_ sender: UIButton) {
+        let fbLoginBtn = FBLoginButton()
+        fbLoginBtn.permissions = ["public_profile", "email"]
+        fbLoginBtn.delegate = self
+        self.performSegue(withIdentifier: "toBasicRegistration", sender: self)//IDで識別
+    }
     
     
     @IBAction func logoutButton(_ sender: Any) {
@@ -71,7 +71,7 @@ class ViewController: UIViewController, LoginButtonDelegate {
     }
     
     // Logout callback
-    func loginButtonDidLogOut(_ loginButton: FBLoginButton!) {
+    func loginButtonDidLogOut(_ loginButton: FBLoginButton) {
     }
 }
 
